@@ -1,0 +1,21 @@
+{
+    "name": "web3p/examples",
+    "description": "Patrick test project.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "sc0Vu",
+            "email": "alk03073135@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^6.3 | ^7.0",
+        "PHP": "^7.1",
+        "kornrunner/keccak": "~1.0",
+        "phpseclib/phpseclib": "~2.0.11",
+        "ext-mbstring": "*",
+        "web3p/ethereum-tx": "^0.4.3",
+        "web3p/web3.php": "^0.1.5"
+    }
+}
