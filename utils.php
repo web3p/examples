@@ -33,6 +33,17 @@ function getTransactionReceipt($eth, $txHash) {
     return $tx;
 }
 
+function getChainId($net) {
+    $version;
+    $net->version(function ($err, $ver) use (&$version) {
+        if ($err !== null) {
+            throw $err;
+        }
+        $version = $ver;
+    });
+    return $version;
+}
+
 function confirmTx($eth, $txHash) {
     $transaction = null;
     while (!$transaction) {
