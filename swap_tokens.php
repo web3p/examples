@@ -7,8 +7,6 @@ use Web3\Utils;
 use Web3\Contract;
 use Web3p\EthereumTx\Transaction;
 
-
-
 $contract = new Contract($web3->provider, $uniV2Json->abi);
 $ownAccount = $testAddress;
 $ownBalance;
@@ -24,7 +22,7 @@ $path = [
     '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
     '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063'
 ];
-$amountIn = Utils::toWei('10', 'mwei');
+$amountIn = Utils::toWei('0.01', 'mwei');
 $amountOut = Utils::toWei('9.6', 'ether');
 $nonce = getNonce($eth, $ownAccount);
 
@@ -58,12 +56,23 @@ $token->call('allowance', $testAddress, $testUNIRouterAddress, [
     }
 });
 
+$gasPrice = '0x' . Utils::toWei('50', 'gwei')->toHex();
+
 // approve
 if ($allowance->compare($amountIn) < 0) {
+    $estimatedApproveGas;
+    $token->estimateGas('approve', $testUNIRouterAddress, $amountIn, [
+        'from' => $testAddress,
+    ], function ($err, $result) use (&$estimatedApproveGas) {
+        if ($err !== null) {
+            throw $err;
+        }
+        $estimatedApproveGas = $result->multiply(Utils::toBn(2));
+    });
     $data = $token->getData('approve', $testUNIRouterAddress, $amountIn);
     $transaction = new Transaction([
         'nonce' => '0x' . $nonce->toHex(),
-        'gas' => $estimatedGas,
+        'gas' => '0x' . $estimatedApproveGas->toHex(),
         'gasPrice' => $gasPrice,
         'data' => '0x' . $data,
         'chainId' => $chainId,
@@ -71,7 +80,7 @@ if ($allowance->compare($amountIn) < 0) {
     ]);
     $transaction->sign($testPrivateKey);
     $txHash = '';
-    $eth->sendRawTransaction('0x' . $transaction->serialize(), function ($err, $transaction) use ($eth, $mainAccount, $ownAccount, &$txHash) {
+    $eth->sendRawTransaction('0x' . $transaction->serialize(), function ($err, $transaction) use ($eth, $ownAccount, &$txHash) {
         if ($err !== null) {
             echo 'Error: ' . $err->getMessage();
             return;
@@ -99,8 +108,7 @@ $contract->call('getAmountsOut', $amountIn, $path, [
         $amountOut = $result['amounts'][1];
     }
 });
-$estimatedGas = '0x' . Utils::toWei('200', 'kwei')->toHex();
-$gasPrice = '0x' . Utils::toWei('40', 'gwei')->toHex();
+$estimatedGas;
 $contract->estimateGas('swapExactTokensForTokens', $amountIn, $amountOut, $path, $testAddress, 1700000000, [
     'from' => $testAddress
 ], function ($err, $result) use (&$estimatedGas) {
@@ -110,13 +118,13 @@ $contract->estimateGas('swapExactTokensForTokens', $amountIn, $amountOut, $path,
     if ($result) {
         echo 'Estimate gas: ' . $result->toString() . PHP_EOL;
     }
-    $estimatedGas = '0x' . $result->toHex();
+    $estimatedGas = $result->multiply(Utils::toBn(2));
 });
 $data = $contract->getData('swapExactTokensForTokens', $amountIn, $amountOut, $path, $testAddress, 1700000000);
 $nonce = getNonce($eth, $ownAccount);
 $transaction = new Transaction([
     'nonce' => '0x' . $nonce->toHex(),
-    'gas' => $estimatedGas,
+    'gas' => '0x' . $estimatedGas->toHex(),
     'gasPrice' => $gasPrice,
     'data' => '0x' . $data,
     'chainId' => $chainId,
