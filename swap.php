@@ -73,7 +73,7 @@ if (!$transaction) {
 }
 
 echo "Transaction was confirmed, let's swap back to bnb" . PHP_EOL;
-$token = new Contract($web3->provider, $testAbi);
+$token = new Contract($web3->provider, $erc20Json->abi);
 $token = $token->at($path[1]);
 $data = $token->getData('approve', $testUNIRouterAddress, $amountIn);
 $nonce = $nonce->add(Utils::toBn(1));

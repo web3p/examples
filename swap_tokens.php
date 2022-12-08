@@ -29,7 +29,7 @@ $amountOut = Utils::toWei('9.6', 'ether');
 $nonce = getNonce($eth, $ownAccount);
 
 // checkout balance and approved allowance
-$token = new Contract($web3->provider, $testAbi);
+$token = new Contract($web3->provider, $erc20Json->abi);
 $token = $token->at('0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174');
 $allowance;
 $token->call('balanceOf', $testAddress, [
