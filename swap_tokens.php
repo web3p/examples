@@ -9,7 +9,7 @@ use Web3p\EthereumTx\Transaction;
 
 
 
-$contract = new Contract($web3->provider, $testUNIAbi);
+$contract = new Contract($web3->provider, $uniV2Json->abi);
 $ownAccount = $testAddress;
 $ownBalance;
 
@@ -24,13 +24,13 @@ $path = [
     '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
     '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063'
 ];
-$amountIn =  Utils::toWei('10', 'mwei');
+$amountIn = Utils::toWei('10', 'mwei');
 $amountOut = Utils::toWei('9.6', 'ether');
 $nonce = getNonce($eth, $ownAccount);
 
 // checkout balance and approved allowance
 $token = new Contract($web3->provider, $erc20Json->abi);
-$token = $token->at('0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174');
+$token = $token->at($path[0]);
 $allowance;
 $token->call('balanceOf', $testAddress, [
     'from' => $testAddress
@@ -60,14 +60,14 @@ $token->call('allowance', $testAddress, $testUNIRouterAddress, [
 
 // approve
 if ($allowance->compare($amountIn) < 0) {
-    $data = $token->getData('approve', $testUNIRouterAddress, '0x' . $amountIn->toHex());
+    $data = $token->getData('approve', $testUNIRouterAddress, $amountIn);
     $transaction = new Transaction([
         'nonce' => '0x' . $nonce->toHex(),
         'gas' => $estimatedGas,
         'gasPrice' => $gasPrice,
         'data' => '0x' . $data,
         'chainId' => $chainId,
-        'to' => $path[1]
+        'to' => $path[0]
     ]);
     $transaction->sign($testPrivateKey);
     $txHash = '';
