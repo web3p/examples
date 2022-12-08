@@ -11,7 +11,7 @@ use Web3p\EthereumTx\Transaction;
 
 $contract = new Contract($web3->provider, $testUNIAbi);
 $ownAccount = $testAddress;
-$ownBalance = getBalance($eth, $ownAccount);
+$ownBalance;
 
 // get chain id
 $chainId = getChainId($web3->net);
@@ -24,10 +24,71 @@ $path = [
     '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
     '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063'
 ];
-$amountIn = '0x' . Utils::toWei('10', 'mwei')->toHex();
-$amountOut = '0x' . Utils::toWei('9.6', 'ether')->toHex();
+$amountIn =  Utils::toWei('10', 'mwei');
+$amountOut = Utils::toWei('9.6', 'ether');
+$nonce = getNonce($eth, $ownAccount);
+
+// checkout balance and approved allowance
+$token = new Contract($web3->provider, $testAbi);
+$token = $token->at('0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174');
+$allowance;
+$token->call('balanceOf', $testAddress, [
+    'from' => $testAddress
+], function ($err, $result) use ($path, &$amountOut, &$ownBalance) {
+    if ($err !== null) {
+        throw $err;
+    }
+    if ($result && count($result) > 0) {
+        $ownBalance = $result[0];
+    }
+});
+
+if ($ownBalance->compare($amountIn) < 0) {
+    throw new Error('Balance not enough');
+}
+
+$token->call('allowance', $testAddress, $testUNIRouterAddress, [
+    'from' => $testAddress
+], function ($err, $result) use ($path, &$amountOut, &$allowance) {
+    if ($err !== null) {
+        throw $err;
+    }
+    if ($result && count($result) > 0) {
+        $allowance = $result[0];
+    }
+});
+
+// approve
+if ($allowance->compare($amountIn) < 0) {
+    $data = $token->getData('approve', $testUNIRouterAddress, '0x' . $amountIn->toHex());
+    $transaction = new Transaction([
+        'nonce' => '0x' . $nonce->toHex(),
+        'gas' => $estimatedGas,
+        'gasPrice' => $gasPrice,
+        'data' => '0x' . $data,
+        'chainId' => $chainId,
+        'to' => $path[1]
+    ]);
+    $transaction->sign($testPrivateKey);
+    $txHash = '';
+    $eth->sendRawTransaction('0x' . $transaction->serialize(), function ($err, $transaction) use ($eth, $mainAccount, $ownAccount, &$txHash) {
+        if ($err !== null) {
+            echo 'Error: ' . $err->getMessage();
+            return;
+        }
+        echo 'Approve tx hash: ' . $transaction . PHP_EOL;
+        $txHash = $transaction;
+    });
+
+    $transaction = confirmTx($eth, $txHash);
+    if (!$transaction) {
+        throw new Error('Transaction was not confirmed.');
+    }
+    $nonce = $nonce->add(Utils::toBn(1));
+}
+
 // make sure the function call will be successfully
-$contract->call('swapExactTokensForTokens', $amountIn, $amountOut, $path, $testAddress, 1700000000, [
+$contract->call('getAmountsOut', $amountIn, $path, [
     'from' => $testAddress
 ], function ($err, $result) use ($path, &$amountOut) {
     if ($err !== null) {
@@ -35,7 +96,7 @@ $contract->call('swapExactTokensForTokens', $amountIn, $amountOut, $path, $testA
     }
     if ($result && isset($result['amounts']) && count($result['amounts']) == count($path)) {
         echo 'Expect token output: ' . $result['amounts'][1]->toString() . PHP_EOL;
-        $amountOut = '0x' . $result['amounts'][1]->toHex();
+        $amountOut = $result['amounts'][1];
     }
 });
 $estimatedGas = '0x' . Utils::toWei('200', 'kwei')->toHex();
