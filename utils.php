@@ -56,3 +56,19 @@ function confirmTx($eth, $txHash) {
         }
     }
 }
+
+// getUniV2AmountsOut
+function getUniV2AmountsOut ($contract, $amountIn, $path, $txOptions) {
+    $amountOut = null;
+    $contract->call('getAmountsOut', $amountIn, $path, $txOptions, function ($err, $result) use ($path, &$amountOut) {
+        if ($err !== null) {
+            throw $err;
+        }
+        if ($result && isset($result['amounts']) && count($result['amounts']) == count($path)) {
+            $amountOut = $result['amounts'];
+        } else {
+            throw new Error('failed to call getAmountsOut');
+        }
+    });
+    return $amountOut;
+}

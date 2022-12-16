@@ -96,18 +96,13 @@ if ($allowance->compare($amountIn) < 0) {
     $nonce = $nonce->add(Utils::toBn(1));
 }
 
-// make sure the function call will be successfully
-$contract->call('getAmountsOut', $amountIn, $path, [
+// get swap amounts
+$getAmountsOutRes = getUniV2AmountsOut($contract, $amountIn, $path, [
     'from' => $testAddress
-], function ($err, $result) use ($path, &$amountOut) {
-    if ($err !== null) {
-        throw $err;
-    }
-    if ($result && isset($result['amounts']) && count($result['amounts']) == count($path)) {
-        echo 'Expect token output: ' . $result['amounts'][1]->toString() . PHP_EOL;
-        $amountOut = $result['amounts'][1];
-    }
-});
+]);
+echo 'Expect token output: ' . $getAmountsOutRes[1]->toString() . PHP_EOL;
+$amountOut = $getAmountsOutRes[1];
+
 $estimatedGas;
 $contract->estimateGas('swapExactTokensForTokens', $amountIn, $amountOut, $path, $testAddress, 1700000000, [
     'from' => $testAddress

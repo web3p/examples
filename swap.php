@@ -16,18 +16,17 @@ echo 'Start to swap eth to tokens' . PHP_EOL;
 $contract = $contract->at($testUNIRouterAddress);
 $amountIn = Utils::toWei('0.01', 'ether');
 $amountOut;
+$path = [
+    '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+    '0x758d08864fb6cce3062667225ca10b8f00496cc2'
+];
 
-$contract->call('getAmountsOut', $amountIn, $path, [
+// get swap amounts
+$getAmountsOutRes = getUniV2AmountsOut($contract, $amountIn, $path, [
     'from' => $testAddress
-], function ($err, $result) use ($path, &$amountOut) {
-    if ($err !== null) {
-        throw $err;
-    }
-    if ($result && isset($result['amounts']) && count($result['amounts']) == count($path)) {
-        echo 'Expect token output: ' . $result['amounts'][1]->toString() . PHP_EOL;
-        $amountOut = $result['amounts'][1];
-    }
-});
+]);
+echo 'Expect token output: ' . $getAmountsOutRes[1]->toString() . PHP_EOL;
+$amountOut = $getAmountsOutRes[1];
 
 $estimatedGas;
 $gasPrice = '0x' . Utils::toWei('50', 'gwei')->toHex();
@@ -118,17 +117,14 @@ $newPath = [
     $path[1],
     $path[0]
 ];
-$contract->call('getAmountsOut', $amountIn, $newPath, [
+
+// get swap amounts
+$getAmountsOutRes = getUniV2AmountsOut($contract, $amountIn, $newPath, [
     'from' => $testAddress
-], function ($err, $result) use ($path, &$amountOut) {
-    if ($err !== null) {
-        throw $err;
-    }
-    if ($result && isset($result['amounts']) && count($result['amounts']) == count($path)) {
-        echo 'Expect token output: ' . $result['amounts'][1]->toString() . PHP_EOL;
-        $amountOut = $result['amounts'][1];
-    }
-});
+]);
+echo 'Expect token output: ' . $getAmountsOutRes[1]->toString() . PHP_EOL;
+$amountOut = $getAmountsOutRes[1];
+
 $contract->estimateGas('swapExactTokensForETH', $amountIn, $amountOut, $newPath, $testAddress, 1700000000, [
     'from' => $testAddress
 ], function ($err, $result) use (&$estimatedGas) {
