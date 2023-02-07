@@ -1179,7 +1179,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.1",
+        "php": "^7.1|^8.0",
         "ext-mbstring": "*"
     },
     "platform-dev": [],
